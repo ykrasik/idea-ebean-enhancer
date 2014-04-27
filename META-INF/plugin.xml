@@ -1,43 +1,64 @@
-<idea-plugin version="2">
-  <id>com.yourcompany.unique.plugin.id</id>
-  <name>Plugin display name here</name>
-  <version>1.0</version>
-  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
-
-  <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
-    ]]></description>
-
-  <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
-    ]]>
-  </change-notes>
-
-  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
-  <idea-version since-build="131"/>
-
-  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
-       on how to target different products -->
-  <!-- uncomment to enable plugin in all products
-  <depends>com.intellij.modules.lang</depends>
+<!--
+  ~ Copyright 2009 Mario Ivankovits
+  ~
+  ~     This file is part of Ebean-idea-plugin.
+  ~
+  ~     Ebean-idea-plugin is free software: you can redistribute it and/or modify
+  ~     it under the terms of the GNU General Public License as published by
+  ~     the Free Software Foundation, either version 3 of the License, or
+  ~     (at your option) any later version.
+  ~
+  ~     Ebean-idea-plugin is distributed in the hope that it will be useful,
+  ~     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~     GNU General Public License for more details.
+  ~
+  ~     You should have received a copy of the GNU General Public License
+  ~     along with Ebean-idea-plugin.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-  <extensions defaultExtensionNs="com.intellij">
-    <!-- Add your extensions here -->
-  </extensions>
+<idea-plugin version="2">
+    <name>Ebean weaver</name>
+    <description>Post-compile Ebean weaving</description>
+    <version>1.4</version>
+    <vendor url="http://www.avaje.org" >Mario Ivankovits</vendor>
+    <idea-version since-build="10000"/>
+    <depends>com.intellij.modules.java</depends>
 
-  <application-components>
-    <!-- Add your application components here -->
-  </application-components>
+    <change-notes>
+    <![CDATA[
+      <b>1.4</b> Using Ebean agent version 2.7.0 (snapshot version of 20100714)<br>
+      <b>1.3</b> Using Ebean agent version 2.4.0 (snapshot version of 20100217)
+      <b>1.2</b> Made IDEA 9.0 RELEASE compatible. Using Ebean agent version 2.2.0 (snapshot version of 20091209)<br>
+      <b>1.1</b> Made IDEA 9.0 BETA compatible<br>
+      <b>1.0</b> Initial version. Using Ebean agent version 2.0.2<br>
+    ]]>
+    </change-notes>
 
-  <project-components>
-    <!-- Add your project components here -->
-  </project-components>
+    <application-components>
+        <!-- Add your application components here -->
+    </application-components>
 
-  <actions>
-    <!-- Add your actions here -->
-  </actions>
+    <project-components>
+        <component>
+            <implementation-class>org.ebean.idea.plugin.EbeanActionComponent</implementation-class>
+            <interface-class>org.ebean.idea.plugin.EbeanActionComponent</interface-class>
+            <!-- For configuration save in iws files -->
+            <option name="workspace" value="true"/>
+        </component>
+    </project-components>
 
+    <actions>
+        <action class="org.ebean.idea.plugin.ToggleEbeanAction"
+                text="Ebean weaving"
+                description="Ebean weaving - http://www.avaje.org/"
+                id="org.ebean.idea.plugin.ToggleEbeanAction">
+            <add-to-group anchor="after" group-id="BuildMenu" relative-to-action="Compile"/>
+            <add-to-group anchor="after" group-id="ProjectViewPopupMenu" relative-to-action="Compile"/>
+        </action>
+    </actions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+    </extensions>
 </idea-plugin>
