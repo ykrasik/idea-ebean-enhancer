@@ -22,7 +22,6 @@ package org.ebean.idea.plugin;
 import com.avaje.ebean.enhance.agent.InputStreamTransform;
 import com.avaje.ebean.enhance.agent.Transformer;
 import com.intellij.openapi.compiler.CompileContext;
-import com.intellij.openapi.compiler.CompileTask;
 import com.intellij.openapi.compiler.CompilerMessageCategory;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vfs.VfsUtil;
@@ -30,10 +29,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.ActionRunner;
 import org.ebean.idea.plugin.RecentlyCompiledSink.CompiledItem;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -41,7 +37,7 @@ import java.util.List;
  *
  * @author Mario Ivankovits, mario@ops.co.at
  */
-public class EbeanWeaveTask implements CompileTask {
+public class EbeanWeaveTask {
     private final EbeanActionComponent ebeanActionComponent;
 
     public EbeanWeaveTask(EbeanActionComponent ebeanActionComponent) {
@@ -56,13 +52,15 @@ public class EbeanWeaveTask implements CompileTask {
             return null;
         }
 
-        String relativePath = classPath.substring(rootPath.length() + 1);
-        int extensionPos = relativePath.lastIndexOf('.');
-        return (extensionPos != -1) ? relativePath.substring(0, extensionPos).replace('/', '.') : null;
+//        String relativePath = classPath.substring(rootPath.length() + 1);
+//        int extensionPos = relativePath.lastIndexOf('.');
+//        return (extensionPos != -1) ? relativePath.substring(0, extensionPos).replace('/', '.') : null;
+        int extensionPos = classPath.lastIndexOf('.');
+        return (extensionPos != -1) ? classPath.substring(0, extensionPos).replace('/', '.') : null;
     }
 
     private boolean processItems(final CompileContext compileContext,
-                                 final List<RecentlyCompiledSink.CompiledItem> compiledItems) {
+                                 final List<CompiledItem> compiledItems) {
         try {
             return ActionRunner.runInsideWriteAction(
                 new ActionRunner.InterruptibleRunnableWithResult<Boolean>() {
@@ -91,7 +89,7 @@ public class EbeanWeaveTask implements CompileTask {
                         final InputStreamTransform isTransform = new InputStreamTransform(transformer, this.getClass().getClassLoader());
 
                         for (int i = 0; i < compiledItems.size(); i++) {
-                            final RecentlyCompiledSink.CompiledItem processingItem = compiledItems.get(i);
+                            final CompiledItem processingItem = compiledItems.get(i);
 
                             // create a className from the compiled filename
                             final String className = resolveClassName(
@@ -101,8 +99,11 @@ public class EbeanWeaveTask implements CompileTask {
                                 continue;
                             }
 
-                            final VirtualFile outputFile = VfsUtil.findFileByURL(
-                                VfsUtil.convertToURL(VfsUtil.pathToUrl(processingItem.getOutputPath())));
+                            final VirtualFile outputFile =
+                                VfsUtil.findFileByURL(
+                                    VfsUtil.convertToURL(
+                                        VfsUtil.pathToUrl(
+                                            new File(processingItem.getOutputRoot(), processingItem.getOutputPath()).getAbsolutePath())));
 
                             if (!isJavaClass(compileContext, outputFile)) {
                                 continue;
@@ -160,13 +161,21 @@ public class EbeanWeaveTask implements CompileTask {
         return buf[0] == (byte) 0xCA && buf[1] == (byte) 0xFE;
     }
 
-    @Override
-    public boolean execute(CompileContext compileContext) {
+//    @Override
+//    public boolean execute(CompileContext compileContext) {
+//        if (!ebeanActionComponent.isActivated()) {
+//            return true;
+//        }
+//
+//        final List<CompiledItem> recentlyCompiled = RecentlyCompiledCollector.getRecentlyCompiled(compileContext);
+//        return processItems(compileContext, recentlyCompiled);
+//    }
+
+    public boolean execute( CompileContext compileContext, List<CompiledItem> compiledFiles) {
         if (!ebeanActionComponent.isActivated()) {
             return true;
         }
 
-        final List<CompiledItem> recentlyCompiled = RecentlyCompiledCollector.getRecentlyCompiled(compileContext);
-        return processItems(compileContext, recentlyCompiled);
+        return processItems(compileContext, compiledFiles);
     }
 }

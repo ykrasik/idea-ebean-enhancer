@@ -19,16 +19,21 @@
 
 package org.ebean.idea.plugin;
 
+import com.intellij.openapi.compiler.CompilationStatusListener;
+import com.intellij.openapi.compiler.CompileContext;
 import com.intellij.openapi.compiler.CompilerManager;
-import com.intellij.openapi.compiler.TranslatingCompiler;
 import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.InvalidDataException;
-import com.intellij.openapi.util.JDOMExternalizable;
-import com.intellij.openapi.util.JDOMExternalizer;
-import com.intellij.openapi.util.WriteExternalException;
+import com.intellij.openapi.util.*;
+import com.intellij.openapi.util.text.StringUtil;
+import org.ebean.idea.plugin.RecentlyCompiledSink.CompiledItem;
 import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Maintains the per project activate flag and setup the compiler stuff appropriate
@@ -36,9 +41,11 @@ import org.jetbrains.annotations.NotNull;
  * @author Mario Ivankovits, mario@ops.co.at
  */
 public class EbeanActionComponent implements ProjectComponent, JDOMExternalizable {
+    private static final Key<List<File>> COMPILED_FILES = new Key<>(EbeanActionComponent.class.getName() + ".COMPILED_FILES");
+
     private boolean activated;
 
-    protected final Project project;
+    private final Project project;
 
     private EbeanWeaveTask ebeanCompiler = new EbeanWeaveTask(this);
 
@@ -75,12 +82,31 @@ public class EbeanActionComponent implements ProjectComponent, JDOMExternalizabl
 
     public void setActivated(boolean activated) {
         if (!this.activated && activated) {
-            setupCompiler();
+//            setupCompiler();
 
-            getCompilerManager().addAfterTask(ebeanCompiler);
+            final List<CompiledItem> compiledFiles = new ArrayList<>();
+            getCompilerManager().addCompilationStatusListener(new CompilationStatusListener() {
+                @Override
+                public void compilationFinished(boolean aborted,
+                                                int errors,
+                                                int warnings,
+                                                CompileContext compileContext) {
+//                    compileContext.putUserData(COMPILED_FILES, compiledFiles);
+
+                    ebeanCompiler.execute(compileContext, compiledFiles);
+                }
+
+                @Override
+                public void fileGenerated(String outputRoot, String relativePath) {
+                    if (StringUtil.endsWith(relativePath, ".class")) {
+                        compiledFiles.add(new CompiledItem(outputRoot, relativePath));
+                    }
+                }
+            });
+
             // getCompilerManager().addCompiler(ebeanCompiler);
         } else if (this.activated && !activated) {
-            resetCompiler();
+//            resetCompiler();
 
             // getCompilerManager().removeCompiler(ebeanCompiler);
         }
@@ -91,25 +117,34 @@ public class EbeanActionComponent implements ProjectComponent, JDOMExternalizabl
         return CompilerManager.getInstance(project);
     }
 
-    private void resetCompiler() {
-    }
+//    private void resetCompiler() {
+//    }
+//
+//    private void setupCompiler() {
+//        // we wrap each and every compiler by our RecentlyCompiledCollector so that we are able to also weave scala or groovy stuff
+//        // at least, this is the idea, I haven't had the chance to test it
+//
+//        final com.intellij.openapi.compiler.Compiler[] compilers = getCompilerManager().getCompilers(TranslatingCompiler.class); // Compiler.class
+//        for (int i = 0; i < compilers.length; i++) {
+//            final com.intellij.openapi.compiler.Compiler compiler = compilers[i];
+//            if (compiler instanceof RecentlyCompiledCollector) {
+//                break; // Already wrapped
+//            } else if (compiler instanceof TranslatingCompiler) {
+//                // Wrap regular compiler
+//                final RecentlyCompiledCollector wrappingCompiler = new RecentlyCompiledCollector((TranslatingCompiler) compiler);
+//                getCompilerManager().removeCompiler(compiler); // Remove real compiler
+//                getCompilerManager().addCompiler(wrappingCompiler); // Add wrapping compiler
+//            }
+//        }
+//    }
 
-    private void setupCompiler() {
-        // we wrap each and every compiler by our RecentlyCompiledCollector so that we are able to also weave scala or groovy stuff
-        // at least, this is the idea, I haven't had the chance to test it
-
-        final com.intellij.openapi.compiler.Compiler[] compilers = getCompilerManager().getCompilers(TranslatingCompiler.class); // Compiler.class
-        for (int i = 0; i < compilers.length; i++) {
-            final com.intellij.openapi.compiler.Compiler compiler = compilers[i];
-            if (compiler instanceof RecentlyCompiledCollector) {
-                break; // Already wrapped
-            } else if (compiler instanceof TranslatingCompiler) {
-                // Wrap regular compiler
-                final RecentlyCompiledCollector wrappingCompiler = new RecentlyCompiledCollector((TranslatingCompiler) compiler);
-                getCompilerManager().removeCompiler(compiler); // Remove real compiler
-                getCompilerManager().addCompiler(wrappingCompiler); // Add wrapping compiler
-            }
+    public static List<File> getRecentlyCompiled(final CompileContext compileContext) {
+        final List<File> list = compileContext.getUserData(COMPILED_FILES);
+        if (list == null) {
+            return Collections.emptyList();
         }
+
+        return list;
     }
 
     /**

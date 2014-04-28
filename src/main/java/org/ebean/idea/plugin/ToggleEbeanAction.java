@@ -27,6 +27,7 @@ import com.intellij.openapi.project.Project;
  * Action for toggling Ebean weaving on and off
  *
  * @author Mario Ivankovits, mario@ops.co.at
+ * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
 public class ToggleEbeanAction extends ToggleAction {
     @Override

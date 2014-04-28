@@ -38,7 +38,7 @@ public class RecentlyCompiledSink implements TranslatingCompiler.OutputSink {
         private final String outputRoot;
         private final String outputPath;
 
-        private CompiledItem(String outputRoot, String outputPath) {
+        public CompiledItem(String outputRoot, String outputPath) {
             this.outputRoot = outputRoot;
             this.outputPath = outputPath;
         }
