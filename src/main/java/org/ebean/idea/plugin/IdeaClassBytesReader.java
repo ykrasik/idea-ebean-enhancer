@@ -38,6 +38,7 @@ import java.io.IOException;
  * Lookup a class file by given class name.
  *
  * @author Mario Ivankovits, mario@ops.co.at
+ * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
 public class IdeaClassBytesReader implements ClassBytesReader {
     final CompileContext compileContext;
@@ -46,31 +47,30 @@ public class IdeaClassBytesReader implements ClassBytesReader {
         this.compileContext = compileContext;
     }
 
+    @Override
     public byte[] getClassBytes(String classNamePath, ClassLoader classLoader) {
         // create a Psi compatible classname
-        String className = classNamePath.replace('/', '.').replace('$', '.');
+        final String className = classNamePath.replace('/', '.').replace('$', '.');
 
-        PsiClass psiClass = JavaPsiFacade.getInstance(compileContext.getProject()).findClass(
+        final PsiClass psiClass = JavaPsiFacade.getInstance(compileContext.getProject()).findClass(
             className,
             GlobalSearchScope.allScope(compileContext.getProject()));
-
         if (psiClass == null) {
             return null;
         }
 
-        VirtualFile virtualFile = null;
-
-        PsiFile file = psiClass.getContainingFile();
+        final PsiFile file = psiClass.getContainingFile();
         if (file == null) {
             // not file attached!?
             return null;
         }
 
+        VirtualFile virtualFile = null;
         if (file instanceof PsiCompiledElement) {
             // usually, this element is a parsed class file already (library), so we can take it
             virtualFile = psiClass.getContainingFile().getVirtualFile();
         } else {
-            VirtualFile sourceFile = file.getVirtualFile();
+            final VirtualFile sourceFile = file.getVirtualFile();
             if (sourceFile == null) {
                 // not real file attached!?
                 return null;
@@ -78,18 +78,17 @@ public class IdeaClassBytesReader implements ClassBytesReader {
 
             // we just found a source file, try to find the corresponding class file by scanning the output directories
             // This is way more complicated than I expected it to be with IDEA
-            CompilerProjectExtension projectExtension = CompilerProjectExtension.getInstance(compileContext.getProject());
-            Module module = ProjectRootManager.getInstance(compileContext.getProject()).getFileIndex().getModuleForFile(sourceFile);
-            CompilerModuleExtension moduleExtension = CompilerModuleExtension.getInstance(module);
+            final CompilerProjectExtension projectExtension = CompilerProjectExtension.getInstance(compileContext.getProject());
+            final Module module = ProjectRootManager.getInstance(compileContext.getProject()).getFileIndex().getModuleForFile(sourceFile);
+            final CompilerModuleExtension moduleExtension = CompilerModuleExtension.getInstance(module);
 
-            VirtualFile[] searchPath =
-                {
-                    moduleExtension.getCompilerOutputPath(),
-                    moduleExtension.getCompilerOutputPathForTests(),
-                    projectExtension.getCompilerOutput()
-                };
+            final VirtualFile[] searchPath = {
+                moduleExtension.getCompilerOutputPath(),
+                moduleExtension.getCompilerOutputPathForTests(),
+                projectExtension.getCompilerOutput()
+            };
 
-            String classFile = classNamePath + ".class";
+            final String classFile = classNamePath + ".class";
             for (VirtualFile search : searchPath) {
                 if (search == null) {
                     continue;
@@ -107,10 +106,10 @@ public class IdeaClassBytesReader implements ClassBytesReader {
         }
 
         try {
-            if (!EbeanWeaveTask.isJavaClass(compileContext, virtualFile)) {
-                // we've gone all the way here just to read a non-java class file. odd ...
-                return null;
-            }
+//            if (!EbeanWeaveTask.isJavaClass(compileContext, virtualFile)) {
+//                // we've gone all the way here just to read a non-java class file. odd ...
+//                return null;
+//            }
 
             return virtualFile.contentsToByteArray();
         } catch (IOException e) {

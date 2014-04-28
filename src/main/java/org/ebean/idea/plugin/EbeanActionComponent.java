@@ -19,47 +19,43 @@
 
 package org.ebean.idea.plugin;
 
-import com.intellij.openapi.compiler.CompilationStatusListener;
-import com.intellij.openapi.compiler.CompileContext;
 import com.intellij.openapi.compiler.CompilerManager;
+import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.ProjectComponent;
+import com.intellij.openapi.components.State;
+import com.intellij.openapi.components.Storage;
+import com.intellij.openapi.components.StoragePathMacros;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.*;
-import com.intellij.openapi.util.text.StringUtil;
-import org.ebean.idea.plugin.RecentlyCompiledSink.CompiledItem;
-import org.jdom.Element;
+import com.intellij.openapi.util.Key;
+import com.intellij.util.xmlb.XmlSerializerUtil;
+import org.ebean.idea.plugin.EbeanActionComponent.EbeanWeavingState;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Maintains the per project activate flag and setup the compiler stuff appropriate
  *
  * @author Mario Ivankovits, mario@ops.co.at
+ * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
-public class EbeanActionComponent implements ProjectComponent, JDOMExternalizable {
+@State(name = "ebeanWeaving", storages = {
+    @Storage(id = "ebeanWeaving", file = StoragePathMacros.WORKSPACE_FILE)
+})
+public class EbeanActionComponent implements ProjectComponent, PersistentStateComponent<EbeanWeavingState> {
     private static final Key<List<File>> COMPILED_FILES = new Key<>(EbeanActionComponent.class.getName() + ".COMPILED_FILES");
 
-    private boolean activated;
-
     private final Project project;
+    private final CompiledFileCollector compiledFileCollector;
 
-    private EbeanWeaveTask ebeanCompiler = new EbeanWeaveTask(this);
+    private EbeanWeavingState ebeanWeavingState;
 
     public EbeanActionComponent(Project project) {
         this.project = project;
-    }
-
-    @Override
-    public void projectOpened() {
-    }
-
-    @Override
-    public void projectClosed() {
-        setActivated(false);
+        this.compiledFileCollector = new CompiledFileCollector();
+        this.ebeanWeavingState = new EbeanWeavingState();
     }
 
     @Override
@@ -76,91 +72,45 @@ public class EbeanActionComponent implements ProjectComponent, JDOMExternalizabl
     public void disposeComponent() {
     }
 
+    @Override
+    public void projectOpened() {
+    }
+
+    @Override
+    public void projectClosed() {
+        setActivated(false);
+    }
+
     public boolean isActivated() {
-        return activated;
+        return ebeanWeavingState.activated;
     }
 
     public void setActivated(boolean activated) {
-        if (!this.activated && activated) {
-//            setupCompiler();
-
-            final List<CompiledItem> compiledFiles = new ArrayList<>();
-            getCompilerManager().addCompilationStatusListener(new CompilationStatusListener() {
-                @Override
-                public void compilationFinished(boolean aborted,
-                                                int errors,
-                                                int warnings,
-                                                CompileContext compileContext) {
-//                    compileContext.putUserData(COMPILED_FILES, compiledFiles);
-
-                    ebeanCompiler.execute(compileContext, compiledFiles);
-                }
-
-                @Override
-                public void fileGenerated(String outputRoot, String relativePath) {
-                    if (StringUtil.endsWith(relativePath, ".class")) {
-                        compiledFiles.add(new CompiledItem(outputRoot, relativePath));
-                    }
-                }
-            });
-
-            // getCompilerManager().addCompiler(ebeanCompiler);
-        } else if (this.activated && !activated) {
-//            resetCompiler();
-
-            // getCompilerManager().removeCompiler(ebeanCompiler);
+        if (!this.ebeanWeavingState.activated && activated) {
+            getCompilerManager().addCompilationStatusListener(compiledFileCollector);
+        } else if (this.ebeanWeavingState.activated && !activated) {
+            getCompilerManager().removeCompilationStatusListener(compiledFileCollector);
         }
-        this.activated = activated;
+        this.ebeanWeavingState.activated = activated;
     }
 
     private CompilerManager getCompilerManager() {
         return CompilerManager.getInstance(project);
     }
 
-//    private void resetCompiler() {
-//    }
-//
-//    private void setupCompiler() {
-//        // we wrap each and every compiler by our RecentlyCompiledCollector so that we are able to also weave scala or groovy stuff
-//        // at least, this is the idea, I haven't had the chance to test it
-//
-//        final com.intellij.openapi.compiler.Compiler[] compilers = getCompilerManager().getCompilers(TranslatingCompiler.class); // Compiler.class
-//        for (int i = 0; i < compilers.length; i++) {
-//            final com.intellij.openapi.compiler.Compiler compiler = compilers[i];
-//            if (compiler instanceof RecentlyCompiledCollector) {
-//                break; // Already wrapped
-//            } else if (compiler instanceof TranslatingCompiler) {
-//                // Wrap regular compiler
-//                final RecentlyCompiledCollector wrappingCompiler = new RecentlyCompiledCollector((TranslatingCompiler) compiler);
-//                getCompilerManager().removeCompiler(compiler); // Remove real compiler
-//                getCompilerManager().addCompiler(wrappingCompiler); // Add wrapping compiler
-//            }
-//        }
-//    }
-
-    public static List<File> getRecentlyCompiled(final CompileContext compileContext) {
-        final List<File> list = compileContext.getUserData(COMPILED_FILES);
-        if (list == null) {
-            return Collections.emptyList();
-        }
-
-        return list;
+    @Nullable
+    @Override
+    public EbeanWeavingState getState() {
+        return ebeanWeavingState;
     }
 
-    /**
-     * Read on/off state from IWS file
-     */
     @Override
-    public void readExternal(Element element) throws InvalidDataException {
-        final boolean config = JDOMExternalizer.readBoolean(element, "isActivated");
-        setActivated(config);
+    public void loadState(EbeanWeavingState ebeanWeavingState) {
+        setActivated(ebeanWeavingState.activated);
+        XmlSerializerUtil.copyBean(ebeanWeavingState, this.ebeanWeavingState);
     }
 
-    /**
-     * Persists on/off state in IWS file
-     */
-    @Override
-    public void writeExternal(Element element) throws WriteExternalException {
-        JDOMExternalizer.write(element, "isActivated", activated);
+    public static class EbeanWeavingState {
+        public boolean activated;
     }
 }

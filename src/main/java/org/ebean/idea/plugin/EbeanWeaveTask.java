@@ -27,155 +27,81 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.ActionRunner;
-import org.ebean.idea.plugin.RecentlyCompiledSink.CompiledItem;
+import org.ebean.idea.plugin.CompiledFileCollector.CompiledFile;
 
 import java.io.*;
+import java.lang.instrument.IllegalClassFormatException;
 import java.util.List;
 
 /**
  * This task actually hand all successfully compiled classes over to the Ebean weaver.
  *
  * @author Mario Ivankovits, mario@ops.co.at
+ * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
 public class EbeanWeaveTask {
-    private final EbeanActionComponent ebeanActionComponent;
+    private static final int DEBUG = 1;
 
-    public EbeanWeaveTask(EbeanActionComponent ebeanActionComponent) {
-        this.ebeanActionComponent = ebeanActionComponent;
+    private final CompileContext compileContext;
+    private final List<CompiledFile> compiledFiles;
+
+    public EbeanWeaveTask(CompileContext compileContext, List<CompiledFile> compiledFiles) {
+        this.compileContext = compileContext;
+        this.compiledFiles = compiledFiles;
     }
 
-    /**
-     * Given a content path and a (source or class) file path, resolve the package name of the file
-     */
-    public static String resolveClassName(String rootPath, String classPath) {
-        if (rootPath == null || classPath == null) {
-            return null;
-        }
-
-//        String relativePath = classPath.substring(rootPath.length() + 1);
-//        int extensionPos = relativePath.lastIndexOf('.');
-//        return (extensionPos != -1) ? relativePath.substring(0, extensionPos).replace('/', '.') : null;
-        int extensionPos = classPath.lastIndexOf('.');
-        return (extensionPos != -1) ? classPath.substring(0, extensionPos).replace('/', '.') : null;
-    }
-
-    private boolean processItems(final CompileContext compileContext,
-                                 final List<CompiledItem> compiledItems) {
+    public void process() {
         try {
-            return ActionRunner.runInsideWriteAction(
-                new ActionRunner.InterruptibleRunnableWithResult<Boolean>() {
-                    public Boolean run() throws Exception {
-                        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean weaving started ...", null, -1, -1);
-
-                        final IdeaClassBytesReader icbr = new IdeaClassBytesReader(compileContext);
-                        final Transformer transformer = new Transformer(icbr, "detect=true;debug=0");
-
-                        transformer.setLogout(new PrintStream(new ByteArrayOutputStream()) {
-                            @Override
-                            public void print(String message) {
-                                compileContext.addMessage(CompilerMessageCategory.INFORMATION, message, null, -1, -1);
-                            }
-
-                            @Override
-                            public void println(String message) {
-                                compileContext.addMessage(CompilerMessageCategory.INFORMATION, message, null, -1, -1);
-                            }
-                        });
-
-                        final ProgressIndicator pi = compileContext.getProgressIndicator();
-                        pi.setIndeterminate(true);
-                        pi.setText("Ebean weaving");
-
-                        final InputStreamTransform isTransform = new InputStreamTransform(transformer, this.getClass().getClassLoader());
-
-                        for (int i = 0; i < compiledItems.size(); i++) {
-                            final CompiledItem processingItem = compiledItems.get(i);
-
-                            // create a className from the compiled filename
-                            final String className = resolveClassName(
-                                processingItem.getOutputRoot(),
-                                processingItem.getOutputPath());
-                            if (className == null) {
-                                continue;
-                            }
-
-                            final VirtualFile outputFile =
-                                VfsUtil.findFileByURL(
-                                    VfsUtil.convertToURL(
-                                        VfsUtil.pathToUrl(
-                                            new File(processingItem.getOutputRoot(), processingItem.getOutputPath()).getAbsolutePath())));
-
-                            if (!isJavaClass(compileContext, outputFile)) {
-                                continue;
-                            }
-
-                            pi.setText2(className);
-
-                            final InputStream is = outputFile.getInputStream();
-                            final byte[] transformed = isTransform.transform(className, is);
-                            if (transformed != null) {
-                                outputFile.setBinaryContent(transformed);
-                            }
-                        }
-
-                        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean weaving done!", null, -1, -1);
-
-                        return Boolean.TRUE;
+            ActionRunner.runInsideWriteAction(
+                new ActionRunner.InterruptibleRunnable() {
+                    @Override
+                    public void run() throws Exception {
+                        doProcess();
                     }
                 }
             );
         } catch (Exception e) {
             compileContext.addMessage(CompilerMessageCategory.ERROR, e.getClass().getName() + ":" + e.getMessage(), null, -1, -1);
         }
-
-        return Boolean.FALSE;
     }
 
-    /**
-     * Check if the file is a java class by peeking the first two magic bytes and see if we need a 0xCAFE ;-)
-     */
-    public static boolean isJavaClass(CompileContext compileContext, VirtualFile content) {
-        final byte[] buf = new byte[2];
-        int read;
-        InputStream is = null;
-        try {
-            is = content.getInputStream();
-            read = is.read(buf, 0, 2);
-        } catch (IOException e) {
-            compileContext.addMessage(CompilerMessageCategory.ERROR, e.getClass().getName() + ":" + e.getMessage(), null, -1, -1);
+    private void doProcess() throws IOException, IllegalClassFormatException {
+        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean weaving started ...", null, -1, -1);
 
-            // problems reading file, treat as non-java file
-            return false;
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException e) {
-                    // ignore this useless exception
-                }
+        final IdeaClassBytesReader classBytesReader = new IdeaClassBytesReader(compileContext);
+        final Transformer transformer = new Transformer(classBytesReader, "detect=true;debug=" + DEBUG);
+
+        transformer.setLogout(new PrintStream(new ByteArrayOutputStream()) {
+            @Override
+            public void print(String message) {
+                compileContext.addMessage(CompilerMessageCategory.INFORMATION, message, null, -1, -1);
+            }
+
+            @Override
+            public void println(String message) {
+                compileContext.addMessage(CompilerMessageCategory.INFORMATION, message, null, -1, -1);
+            }
+        });
+
+        final ProgressIndicator progressIndicator = compileContext.getProgressIndicator();
+        progressIndicator.setIndeterminate(true);
+        progressIndicator.setText("Ebean weaving");
+
+        final InputStreamTransform isTransform = new InputStreamTransform(transformer, this.getClass().getClassLoader());
+
+        for (CompiledFile compiledFile : compiledFiles) {
+            final File file = compiledFile.getFile();
+            final String className = compiledFile.getClassName();
+
+            progressIndicator.setText2(className);
+
+            final byte[] transformed = isTransform.transform(className, file);
+            if (transformed != null) {
+                final VirtualFile outputFile = VfsUtil.findFileByIoFile(file, true);
+                outputFile.setBinaryContent(transformed);
             }
         }
-        if (read < buf.length) {
-            return false;
-        }
-        return buf[0] == (byte) 0xCA && buf[1] == (byte) 0xFE;
-    }
 
-//    @Override
-//    public boolean execute(CompileContext compileContext) {
-//        if (!ebeanActionComponent.isActivated()) {
-//            return true;
-//        }
-//
-//        final List<CompiledItem> recentlyCompiled = RecentlyCompiledCollector.getRecentlyCompiled(compileContext);
-//        return processItems(compileContext, recentlyCompiled);
-//    }
-
-    public boolean execute( CompileContext compileContext, List<CompiledItem> compiledFiles) {
-        if (!ebeanActionComponent.isActivated()) {
-            return true;
-        }
-
-        return processItems(compileContext, compiledFiles);
+        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean weaving done!", null, -1, -1);
     }
 }
