@@ -38,7 +38,7 @@ import java.util.List;
  * @author Mario Ivankovits, mario@ops.co.at
  */
 public class RecentlyCompiledCollector implements TranslatingCompiler {
-    public final static Key<List<RecentlyCompiledSink.CompiledItem>> RECENTLY_COMPILED = new Key<List<RecentlyCompiledSink.CompiledItem>>(RecentlyCompiledCollector.class.getName() + ".RECENTLY_COMPILED");
+    private static final Key<List<RecentlyCompiledSink.CompiledItem>> RECENTLY_COMPILED = new Key<>(RecentlyCompiledCollector.class.getName() + ".RECENTLY_COMPILED");
 
     private final TranslatingCompiler delegate;
 

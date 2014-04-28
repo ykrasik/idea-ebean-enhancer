@@ -28,6 +28,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.ActionRunner;
+import org.ebean.idea.plugin.RecentlyCompiledSink.CompiledItem;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -68,9 +69,8 @@ public class EbeanWeaveTask implements CompileTask {
                     public Boolean run() throws Exception {
                         compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean weaving started ...", null, -1, -1);
 
-                        IdeaClassBytesReader icbr = new IdeaClassBytesReader(compileContext);
-
-                        Transformer transformer = new Transformer(icbr, "detect=true;debug=0");
+                        final IdeaClassBytesReader icbr = new IdeaClassBytesReader(compileContext);
+                        final Transformer transformer = new Transformer(icbr, "detect=true;debug=0");
 
                         transformer.setLogout(new PrintStream(new ByteArrayOutputStream()) {
                             @Override
@@ -84,24 +84,24 @@ public class EbeanWeaveTask implements CompileTask {
                             }
                         });
 
-                        ProgressIndicator pi = compileContext.getProgressIndicator();
+                        final ProgressIndicator pi = compileContext.getProgressIndicator();
                         pi.setIndeterminate(true);
                         pi.setText("Ebean weaving");
 
-                        InputStreamTransform isTransform = new InputStreamTransform(transformer, this.getClass().getClassLoader());
+                        final InputStreamTransform isTransform = new InputStreamTransform(transformer, this.getClass().getClassLoader());
 
                         for (int i = 0; i < compiledItems.size(); i++) {
-                            RecentlyCompiledSink.CompiledItem processingItem = compiledItems.get(i);
+                            final RecentlyCompiledSink.CompiledItem processingItem = compiledItems.get(i);
 
                             // create a className from the compiled filename
-                            String className = resolveClassName(
+                            final String className = resolveClassName(
                                 processingItem.getOutputRoot(),
                                 processingItem.getOutputPath());
                             if (className == null) {
                                 continue;
                             }
 
-                            VirtualFile outputFile = VfsUtil.findFileByURL(
+                            final VirtualFile outputFile = VfsUtil.findFileByURL(
                                 VfsUtil.convertToURL(VfsUtil.pathToUrl(processingItem.getOutputPath())));
 
                             if (!isJavaClass(compileContext, outputFile)) {
@@ -110,8 +110,8 @@ public class EbeanWeaveTask implements CompileTask {
 
                             pi.setText2(className);
 
-                            InputStream is = outputFile.getInputStream();
-                            byte[] transformed = isTransform.transform(className, is);
+                            final InputStream is = outputFile.getInputStream();
+                            final byte[] transformed = isTransform.transform(className, is);
                             if (transformed != null) {
                                 outputFile.setBinaryContent(transformed);
                             }
@@ -134,7 +134,7 @@ public class EbeanWeaveTask implements CompileTask {
      * Check if the file is a java class by peeking the first two magic bytes and see if we need a 0xCAFE ;-)
      */
     public static boolean isJavaClass(CompileContext compileContext, VirtualFile content) {
-        byte[] buf = new byte[2];
+        final byte[] buf = new byte[2];
         int read;
         InputStream is = null;
         try {
@@ -160,11 +160,13 @@ public class EbeanWeaveTask implements CompileTask {
         return buf[0] == (byte) 0xCA && buf[1] == (byte) 0xFE;
     }
 
+    @Override
     public boolean execute(CompileContext compileContext) {
         if (!ebeanActionComponent.isActivated()) {
             return true;
         }
 
-        return processItems(compileContext, RecentlyCompiledCollector.getRecentlyCompiled(compileContext));
+        final List<CompiledItem> recentlyCompiled = RecentlyCompiledCollector.getRecentlyCompiled(compileContext);
+        return processItems(compileContext, recentlyCompiled);
     }
 }

@@ -20,7 +20,6 @@
 package org.ebean.idea.plugin;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.DataConstants;
 import com.intellij.openapi.actionSystem.ToggleAction;
 import com.intellij.openapi.project.Project;
 
@@ -31,20 +30,20 @@ import com.intellij.openapi.project.Project;
  */
 public class ToggleEbeanAction extends ToggleAction {
     @Override
-    public boolean isSelected(AnActionEvent anActionEvent) {
-        Project currentProject = (Project) anActionEvent.getDataContext().getData(DataConstants.PROJECT);
+    public boolean isSelected(AnActionEvent e) {
+        final Project currentProject = e.getProject();
         if (currentProject != null && currentProject.hasComponent(EbeanActionComponent.class)) {
-            EbeanActionComponent action = currentProject.getComponent(EbeanActionComponent.class);
+            final EbeanActionComponent action = currentProject.getComponent(EbeanActionComponent.class);
             return action.isActivated();
         }
         return false;
     }
 
     @Override
-    public void setSelected(AnActionEvent anActionEvent, boolean selected) {
-        Project currentProject = (Project) anActionEvent.getDataContext().getData(DataConstants.PROJECT);
+    public void setSelected(AnActionEvent e, boolean selected) {
+        final Project currentProject = e.getProject();
         if (currentProject != null && currentProject.hasComponent(EbeanActionComponent.class)) {
-            EbeanActionComponent action = currentProject.getComponent(EbeanActionComponent.class);
+            final EbeanActionComponent action = currentProject.getComponent(EbeanActionComponent.class);
             action.setActivated(selected);
         }
     }

@@ -46,21 +46,26 @@ public class EbeanActionComponent implements ProjectComponent, JDOMExternalizabl
         this.project = project;
     }
 
+    @Override
     public void projectOpened() {
     }
 
+    @Override
     public void projectClosed() {
         setActivated(false);
     }
 
+    @Override
     @NotNull
     public String getComponentName() {
         return "Ebean Action Component";
     }
 
+    @Override
     public void initComponent() {
     }
 
+    @Override
     public void disposeComponent() {
     }
 
@@ -93,16 +98,16 @@ public class EbeanActionComponent implements ProjectComponent, JDOMExternalizabl
         // we wrap each and every compiler by our RecentlyCompiledCollector so that we are able to also weave scala or groovy stuff
         // at least, this is the idea, I haven't had the chance to test it
 
-        com.intellij.openapi.compiler.Compiler[] compilers = getCompilerManager().getCompilers(TranslatingCompiler.class); // Compiler.class
+        final com.intellij.openapi.compiler.Compiler[] compilers = getCompilerManager().getCompilers(TranslatingCompiler.class); // Compiler.class
         for (int i = 0; i < compilers.length; i++) {
-            com.intellij.openapi.compiler.Compiler compiler = compilers[i];
+            final com.intellij.openapi.compiler.Compiler compiler = compilers[i];
             if (compiler instanceof RecentlyCompiledCollector) {
                 break; // Already wrapped
             } else if (compiler instanceof TranslatingCompiler) {
                 // Wrap regular compiler
-                RecentlyCompiledCollector wrappingCompiler = new RecentlyCompiledCollector((TranslatingCompiler) compiler);
+                final RecentlyCompiledCollector wrappingCompiler = new RecentlyCompiledCollector((TranslatingCompiler) compiler);
                 getCompilerManager().removeCompiler(compiler); // Remove real compiler
-                getCompilerManager().addCompiler(wrappingCompiler); // Add wrapping ocmpiler
+                getCompilerManager().addCompiler(wrappingCompiler); // Add wrapping compiler
             }
         }
     }
@@ -110,14 +115,16 @@ public class EbeanActionComponent implements ProjectComponent, JDOMExternalizabl
     /**
      * Read on/off state from IWS file
      */
+    @Override
     public void readExternal(Element element) throws InvalidDataException {
-        boolean config = JDOMExternalizer.readBoolean(element, "isActivated");
+        final boolean config = JDOMExternalizer.readBoolean(element, "isActivated");
         setActivated(config);
     }
 
     /**
      * Persists on/off state in IWS file
      */
+    @Override
     public void writeExternal(Element element) throws WriteExternalException {
         JDOMExternalizer.write(element, "isActivated", activated);
     }
