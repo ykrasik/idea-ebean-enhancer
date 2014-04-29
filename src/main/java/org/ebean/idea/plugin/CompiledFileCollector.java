@@ -95,5 +95,13 @@ public class CompiledFileCollector implements CompilationStatusListener {
         public String getClassName() {
             return className;
         }
+
+        @Override
+        public String toString() {
+            return "CompiledFile{" +
+                "file=" + file +
+                ", className='" + className + '\'' +
+                '}';
+        }
     }
 }

@@ -21,10 +21,6 @@ package org.ebean.idea.plugin;
 
 import com.avaje.ebean.enhance.agent.ClassBytesReader;
 import com.intellij.openapi.compiler.CompileContext;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.roots.CompilerModuleExtension;
-import com.intellij.openapi.roots.CompilerProjectExtension;
-import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
@@ -65,40 +61,12 @@ public class IdeaClassBytesReader implements ClassBytesReader {
             return null;
         }
 
-        VirtualFile virtualFile = null;
+        final VirtualFile virtualFile;
         if (file instanceof PsiCompiledElement) {
             // usually, this element is a parsed class file already (library), so we can take it
             virtualFile = psiClass.getContainingFile().getVirtualFile();
         } else {
-            final VirtualFile sourceFile = file.getVirtualFile();
-            if (sourceFile == null) {
-                // not real file attached!?
-                return null;
-            }
-
-            // we just found a source file, try to find the corresponding class file by scanning the output directories
-            // This is way more complicated than I expected it to be with IDEA
-            final CompilerProjectExtension projectExtension = CompilerProjectExtension.getInstance(compileContext.getProject());
-            final Module module = ProjectRootManager.getInstance(compileContext.getProject()).getFileIndex().getModuleForFile(sourceFile);
-            final CompilerModuleExtension moduleExtension = CompilerModuleExtension.getInstance(module);
-
-            final VirtualFile[] searchPath = {
-                moduleExtension.getCompilerOutputPath(),
-                moduleExtension.getCompilerOutputPathForTests(),
-                projectExtension.getCompilerOutput()
-            };
-
-            final String classFile = classNamePath + ".class";
-            for (VirtualFile search : searchPath) {
-                if (search == null) {
-                    continue;
-                }
-
-                virtualFile = search.findFileByRelativePath(classFile);
-                if (virtualFile != null) {
-                    break;
-                }
-            }
+            virtualFile = file.getVirtualFile();
         }
 
         if (virtualFile == null) {
@@ -106,11 +74,6 @@ public class IdeaClassBytesReader implements ClassBytesReader {
         }
 
         try {
-//            if (!EbeanWeaveTask.isJavaClass(compileContext, virtualFile)) {
-//                // we've gone all the way here just to read a non-java class file. odd ...
-//                return null;
-//            }
-
             return virtualFile.contentsToByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
