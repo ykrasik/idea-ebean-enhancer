@@ -35,7 +35,7 @@ public class ToggleEbeanAction extends ToggleAction {
         final Project currentProject = e.getProject();
         if (currentProject != null && currentProject.hasComponent(EbeanActionComponent.class)) {
             final EbeanActionComponent action = currentProject.getComponent(EbeanActionComponent.class);
-            return action.isActivated();
+            return action.isEnabled();
         }
         return false;
     }
@@ -45,7 +45,7 @@ public class ToggleEbeanAction extends ToggleAction {
         final Project currentProject = e.getProject();
         if (currentProject != null && currentProject.hasComponent(EbeanActionComponent.class)) {
             final EbeanActionComponent action = currentProject.getComponent(EbeanActionComponent.class);
-            action.setActivated(selected);
+            action.setEnabled(selected);
         }
     }
 }

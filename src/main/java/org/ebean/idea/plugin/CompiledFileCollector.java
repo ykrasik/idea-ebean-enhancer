@@ -25,7 +25,7 @@ public class CompiledFileCollector implements CompilationStatusListener {
                                     int errors,
                                     int warnings,
                                     CompileContext compileContext) {
-        new EbeanWeaveTask(compileContext, compiledFiles).process();
+        new EbeanEnhancementTask(compileContext, compiledFiles).process();
         compiledFiles = new ArrayList<>();
     }
 

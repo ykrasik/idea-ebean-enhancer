@@ -23,7 +23,7 @@ import com.intellij.openapi.compiler.CompilerManager;
 import com.intellij.openapi.components.*;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.XmlSerializerUtil;
-import org.ebean.idea.plugin.EbeanActionComponent.EbeanWeavingState;
+import org.ebean.idea.plugin.EbeanActionComponent.EbeanEnhancementState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,19 +33,19 @@ import org.jetbrains.annotations.Nullable;
  * @author Mario Ivankovits, mario@ops.co.at
  * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
-@State(name = "ebeanWeaving", storages = {
-    @Storage(id = "ebeanWeaving", file = StoragePathMacros.WORKSPACE_FILE)
+@State(name = "ebeanEnhancement", storages = {
+    @Storage(id = "ebeanEnhancement", file = StoragePathMacros.WORKSPACE_FILE)
 })
-public class EbeanActionComponent implements ProjectComponent, PersistentStateComponent<EbeanWeavingState> {
+public class EbeanActionComponent implements ProjectComponent, PersistentStateComponent<EbeanEnhancementState> {
     private final Project project;
     private final CompiledFileCollector compiledFileCollector;
 
-    private final EbeanWeavingState ebeanWeavingState;
+    private final EbeanEnhancementState ebeanEnhancementState;
 
     public EbeanActionComponent(Project project) {
         this.project = project;
         this.compiledFileCollector = new CompiledFileCollector();
-        this.ebeanWeavingState = new EbeanWeavingState();
+        this.ebeanEnhancementState = new EbeanEnhancementState();
     }
 
     @Override
@@ -68,20 +68,20 @@ public class EbeanActionComponent implements ProjectComponent, PersistentStateCo
 
     @Override
     public void projectClosed() {
-        setActivated(false);
+        setEnabled(false);
     }
 
-    public boolean isActivated() {
-        return ebeanWeavingState.activated;
+    public boolean isEnabled() {
+        return ebeanEnhancementState.enabled;
     }
 
-    public void setActivated(boolean activated) {
-        if (!this.ebeanWeavingState.activated && activated) {
+    public void setEnabled(boolean enabled) {
+        if (!this.ebeanEnhancementState.enabled && enabled) {
             getCompilerManager().addCompilationStatusListener(compiledFileCollector);
-        } else if (this.ebeanWeavingState.activated && !activated) {
+        } else if (this.ebeanEnhancementState.enabled && !enabled) {
             getCompilerManager().removeCompilationStatusListener(compiledFileCollector);
         }
-        this.ebeanWeavingState.activated = activated;
+        this.ebeanEnhancementState.enabled = enabled;
     }
 
     private CompilerManager getCompilerManager() {
@@ -90,17 +90,17 @@ public class EbeanActionComponent implements ProjectComponent, PersistentStateCo
 
     @Nullable
     @Override
-    public EbeanWeavingState getState() {
-        return ebeanWeavingState;
+    public EbeanEnhancementState getState() {
+        return ebeanEnhancementState;
     }
 
     @Override
-    public void loadState(EbeanWeavingState ebeanWeavingState) {
-        setActivated(ebeanWeavingState.activated);
-        XmlSerializerUtil.copyBean(ebeanWeavingState, this.ebeanWeavingState);
+    public void loadState(EbeanEnhancementState ebeanEnhancementState) {
+        setEnabled(ebeanEnhancementState.enabled);
+        XmlSerializerUtil.copyBean(ebeanEnhancementState, this.ebeanEnhancementState);
     }
 
-    public static class EbeanWeavingState {
-        public boolean activated;
+    public static class EbeanEnhancementState {
+        public boolean enabled;
     }
 }

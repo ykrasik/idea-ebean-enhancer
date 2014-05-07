@@ -39,13 +39,13 @@ import java.util.List;
  * @author Mario Ivankovits, mario@ops.co.at
  * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
-public class EbeanWeaveTask {
+public class EbeanEnhancementTask {
     private static final int DEBUG = 1;
 
     private final CompileContext compileContext;
     private final List<CompiledFile> compiledFiles;
 
-    public EbeanWeaveTask(CompileContext compileContext, List<CompiledFile> compiledFiles) {
+    public EbeanEnhancementTask(CompileContext compileContext, List<CompiledFile> compiledFiles) {
         this.compileContext = compileContext;
         this.compiledFiles = compiledFiles;
     }
@@ -66,7 +66,7 @@ public class EbeanWeaveTask {
     }
 
     private void doProcess() throws IOException, IllegalClassFormatException {
-        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean weaving started ...", null, -1, -1);
+        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean enhancement started ...", null, -1, -1);
 
         final IdeaClassBytesReader classBytesReader = new IdeaClassBytesReader(compileContext);
         final Transformer transformer = new Transformer(classBytesReader, "detect=true;debug=" + DEBUG);
@@ -85,7 +85,7 @@ public class EbeanWeaveTask {
 
         final ProgressIndicator progressIndicator = compileContext.getProgressIndicator();
         progressIndicator.setIndeterminate(true);
-        progressIndicator.setText("Ebean weaving");
+        progressIndicator.setText("Ebean enhancement");
 
         final InputStreamTransform isTransform = new InputStreamTransform(transformer, this.getClass().getClassLoader());
 
@@ -102,6 +102,6 @@ public class EbeanWeaveTask {
             }
         }
 
-        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean weaving done!", null, -1, -1);
+        compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean enhancement done!", null, -1, -1);
     }
 }

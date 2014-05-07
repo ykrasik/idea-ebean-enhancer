@@ -18,21 +18,19 @@
   -->
 
 <idea-plugin version="2">
-    <name>Ebean weaver</name>
-    <description>Post-compile Ebean weaving</description>
-    <version>1.5</version>
-    <vendor url="http://www.avaje.org" >Mario Ivankovits &amp; Yevgeny Krasik</vendor>
+    <name>Ebean enhancer</name>
+    <description>Post-compile Ebean enhancement</description>
+    <version>1.0</version>
+    <vendor url="http://www.avaje.org" >Yevgeny Krasik &amp; Mario Ivankovits</vendor>
     <idea-version since-build="10000"/>
     <depends>com.intellij.modules.java</depends>
 
     <change-notes>
     <![CDATA[
-      <b>1.5</b> Updated for IDEA 13. Using Ebean agent version 3.2.2 <br>
-      <b>1.4</b> Using Ebean agent version 2.7.0 (snapshot version of 20100714)<br>
-      <b>1.3</b> Using Ebean agent version 2.4.0 (snapshot version of 20100217)
-      <b>1.2</b> Made IDEA 9.0 RELEASE compatible. Using Ebean agent version 2.2.0 (snapshot version of 20091209)<br>
-      <b>1.1</b> Made IDEA 9.0 BETA compatible<br>
-      <b>1.0</b> Initial version. Using Ebean agent version 2.0.2<br>
+      <b>1.0</b> Initial version for IDEA 13. Ebean agent version 3.2.2<br>
+      <br>
+      This is an updated version of the <i>'Ebean-weaver'</i> plugin.<br>
+      Source: https://github.com/ykrasik/idea-ebean-enhancer<br>
     ]]>
     </change-notes>
 
@@ -51,8 +49,8 @@
 
     <actions>
         <action class="org.ebean.idea.plugin.ToggleEbeanAction"
-                text="Ebean weaving"
-                description="Ebean weaving - http://www.avaje.org/"
+                text="Ebean enhancement"
+                description="Ebean enhancement - http://www.avaje.org/"
                 id="org.ebean.idea.plugin.ToggleEbeanAction">
             <add-to-group anchor="after" group-id="BuildMenu" relative-to-action="Compile"/>
             <add-to-group anchor="after" group-id="ProjectViewPopupMenu" relative-to-action="Compile"/>
