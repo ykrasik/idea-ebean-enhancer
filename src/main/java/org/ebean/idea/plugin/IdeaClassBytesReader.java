@@ -61,6 +61,7 @@ public class IdeaClassBytesReader implements ClassBytesReader {
             return null;
         }
 
+        // Not quite sure if this is required...
         final VirtualFile virtualFile;
         if (file instanceof PsiCompiledElement) {
             // usually, this element is a parsed class file already (library), so we can take it

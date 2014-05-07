@@ -20,20 +20,12 @@
 package org.ebean.idea.plugin;
 
 import com.intellij.openapi.compiler.CompilerManager;
-import com.intellij.openapi.components.PersistentStateComponent;
-import com.intellij.openapi.components.ProjectComponent;
-import com.intellij.openapi.components.State;
-import com.intellij.openapi.components.Storage;
-import com.intellij.openapi.components.StoragePathMacros;
+import com.intellij.openapi.components.*;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Key;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.ebean.idea.plugin.EbeanActionComponent.EbeanWeavingState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.File;
-import java.util.List;
 
 /**
  * Maintains the per project activate flag and setup the compiler stuff appropriate
@@ -45,12 +37,10 @@ import java.util.List;
     @Storage(id = "ebeanWeaving", file = StoragePathMacros.WORKSPACE_FILE)
 })
 public class EbeanActionComponent implements ProjectComponent, PersistentStateComponent<EbeanWeavingState> {
-    private static final Key<List<File>> COMPILED_FILES = new Key<>(EbeanActionComponent.class.getName() + ".COMPILED_FILES");
-
     private final Project project;
     private final CompiledFileCollector compiledFileCollector;
 
-    private EbeanWeavingState ebeanWeavingState;
+    private final EbeanWeavingState ebeanWeavingState;
 
     public EbeanActionComponent(Project project) {
         this.project = project;
