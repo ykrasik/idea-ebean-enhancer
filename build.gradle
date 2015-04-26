@@ -2,11 +2,11 @@ apply plugin: 'java'
 apply plugin: 'idea'
 
 sourceCompatibility = 1.7
-version = '1.0'
+version = '2.0'
 
 buildscript {
     ext {
-        ebeanAgentVersion = "4.5.5"
+        ebeanAgentVersion = "4.5.2"
     }
 }
 

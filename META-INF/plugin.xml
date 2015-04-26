@@ -17,16 +17,17 @@
   ~     along with Ebean-idea-plugin.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<idea-plugin version="2">
+<idea-plugin version="3">
     <name>Ebean enhancer</name>
     <description>Post-compile Ebean enhancement</description>
-    <version>1.0</version>
+    <version>2.0</version>
     <vendor url="http://www.avaje.org" >Yevgeny Krasik &amp; Mario Ivankovits</vendor>
     <idea-version since-build="10000"/>
     <depends>com.intellij.modules.java</depends>
 
     <change-notes>
     <![CDATA[
+      <b>2.0</b> Ebean agent updated to 4.5.2, tested on Ebean 4.5.5<br>
       <b>1.0</b> Initial version for IDEA 13. Ebean agent version 3.2.2<br>
       <br>
       This is an updated version of the <i>'Ebean-weaver'</i> plugin.<br>
