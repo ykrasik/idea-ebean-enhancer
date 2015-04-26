@@ -37,7 +37,7 @@ import java.io.IOException;
  * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
 public class IdeaClassBytesReader implements ClassBytesReader {
-    final CompileContext compileContext;
+    private final CompileContext compileContext;
 
     public IdeaClassBytesReader(final CompileContext compileContext) {
         this.compileContext = compileContext;

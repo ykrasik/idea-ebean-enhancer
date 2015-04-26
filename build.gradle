@@ -1,16 +1,13 @@
-/**
- * User: yevgenyk
- * Date: 27/04/2014
- * Time: 17:52
- */
 apply plugin: 'java'
 apply plugin: 'idea'
 
 sourceCompatibility = 1.7
 version = '1.0'
 
-ext {
-    ebeanAgentVersion = "3.2.2"
+buildscript {
+    ext {
+        ebeanAgentVersion = "4.5.5"
+    }
 }
 
 repositories {
@@ -19,4 +16,8 @@ repositories {
 
 dependencies {
     compile "org.avaje.ebeanorm:avaje-ebeanorm-agent:$ebeanAgentVersion"
+}
+
+wrapper {
+    gradleVersion = "2.2"
 }
