@@ -7,4 +7,4 @@ This is an updated version of previous work by Mario Ivankovits (mario@ops.co.at
 
 Updated for IntelliJ IDEA 13+.
 
-Latest Ebean version tested: 4.5.5
+Latest Ebean version tested: 3.2.5
