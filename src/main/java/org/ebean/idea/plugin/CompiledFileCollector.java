@@ -7,34 +7,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author yevgenyk - Updated 28/04/2014 for IDEA 13
  */
 public class CompiledFileCollector implements CompilationStatusListener {
-    private List<CompiledFile> compiledFiles;
-
-    public CompiledFileCollector() {
-        this.compiledFiles = new ArrayList<>();
-    }
-
-    @Override
-    public void compilationFinished(boolean aborted,
-                                    int errors,
-                                    int warnings,
-                                    CompileContext compileContext) {
-        new EbeanEnhancementTask(compileContext, compiledFiles).process();
-        compiledFiles = new ArrayList<>();
-    }
+    private Map<String, File> compiledClasses = new HashMap<>();
 
     @Override
     public void fileGenerated(String outputRoot, String relativePath) {
         // Collect all valid compiled '.class' files
         final CompiledFile compiledFile = createCompiledFile(outputRoot, relativePath);
         if (compiledFile != null) {
-            compiledFiles.add(compiledFile);
+            this.compiledClasses.put(compiledFile.className, compiledFile.file);
         }
     }
 
@@ -77,6 +64,15 @@ public class CompiledFileCollector implements CompilationStatusListener {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Override
+    public void compilationFinished(boolean aborted,
+                                    int errors,
+                                    int warnings,
+                                    CompileContext compileContext) {
+        new EbeanEnhancementTask(compileContext, compiledClasses).process();
+        this.compiledClasses = new HashMap<>();
     }
 
     public static class CompiledFile {

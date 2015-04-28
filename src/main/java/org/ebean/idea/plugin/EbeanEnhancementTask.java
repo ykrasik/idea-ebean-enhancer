@@ -27,11 +27,14 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.ActionRunner;
-import org.ebean.idea.plugin.CompiledFileCollector.CompiledFile;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.instrument.IllegalClassFormatException;
-import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * This task actually hand all successfully compiled classes over to the Ebean weaver.
@@ -43,11 +46,11 @@ public class EbeanEnhancementTask {
     private static final int DEBUG = 1;
 
     private final CompileContext compileContext;
-    private final List<CompiledFile> compiledFiles;
+    private final Map<String, File> compiledClasses;
 
-    public EbeanEnhancementTask(CompileContext compileContext, List<CompiledFile> compiledFiles) {
+    public EbeanEnhancementTask(CompileContext compileContext, Map<String, File> compiledClasses) {
         this.compileContext = compileContext;
-        this.compiledFiles = compiledFiles;
+        this.compiledClasses = compiledClasses;
     }
 
     public void process() {
@@ -68,7 +71,7 @@ public class EbeanEnhancementTask {
     private void doProcess() throws IOException, IllegalClassFormatException {
         compileContext.addMessage(CompilerMessageCategory.INFORMATION, "Ebean enhancement started ...", null, -1, -1);
 
-        final IdeaClassBytesReader classBytesReader = new IdeaClassBytesReader(compileContext);
+        final IdeaClassBytesReader classBytesReader = new IdeaClassBytesReader(compileContext, compiledClasses);
         final Transformer transformer = new Transformer(classBytesReader, "detect=true;debug=" + DEBUG);
 
         transformer.setLogout(new PrintStream(new ByteArrayOutputStream()) {
@@ -89,9 +92,9 @@ public class EbeanEnhancementTask {
 
         final InputStreamTransform isTransform = new InputStreamTransform(transformer, this.getClass().getClassLoader());
 
-        for (CompiledFile compiledFile : compiledFiles) {
-            final File file = compiledFile.getFile();
-            final String className = compiledFile.getClassName();
+        for (Entry<String, File> entry : compiledClasses.entrySet()) {
+            final String className = entry.getKey();
+            final File file = entry.getValue();
 
             progressIndicator.setText2(className);
 
